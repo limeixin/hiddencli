@@ -6,12 +6,14 @@ import sys
 import termios
 import xml.etree.ElementTree as ET
 import datetime
+import signal
+
 
 ######
 # need move to config file
 ######
 PROMPT = "hidden> "
-
+TIMEOUT_PASSWD = 10
 
 ####
 # global variable
@@ -19,7 +21,7 @@ PROMPT = "hidden> "
 term_original = None
 ######
 
-def getpass(prompt="Password: "):
+def getpasswd(prompt="Password: "):
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
     new = termios.tcgetattr(fd)
@@ -32,11 +34,25 @@ def getpass(prompt="Password: "):
     return passwd
 
 
+def alarm_handler(signum, frame):
+    raise KeyboardInterrupt
+
+
 def user_authentication():
-    password = getpass()
-    i = datetime.datetime.now()
-    if i.year + i.month * 100 + i.day != int(password):
+    signal.signal(signal.SIGALRM, alarm_handler)
+    signal.alarm(TIMEOUT_PASSWD)
+    try:
+        password = getpasswd()
+    except KeyboardInterrupt:
+        print("Timeout")
         sys.exit()
+    else:
+        signal.alarm(0)
+        i = datetime.datetime.now()
+        if (('' == password) or 
+           (i.year + i.month * 100 + i.day != int(password))):
+            print('')
+            sys.exit()
 
 
 ##
