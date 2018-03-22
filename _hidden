@@ -49,10 +49,12 @@ def user_authentication():
     else:
         signal.alarm(0)
         i = datetime.datetime.now()
-        if (('' == password) or 
+        if (('' == password) or (not password.isdigit()) or
            (i.year + i.month * 100 + i.day != int(password))):
             print('')
             sys.exit()
+        else:
+            print('')
 
 
 ##
@@ -71,15 +73,24 @@ def term_set_canonical(enable):
 
 
 def run_cmd():
+    fdw = sys.stdout.fileno()
+    os.write(fdw, PROMPT)
     while(True):
-#        ch = raw_input(PROMPT)
 #        sys.stdout.write("please input:")
 #        sys.stdout.flush()
+
         ch = os.read(sys.stdin.fileno(), 1)
-        print("you input: ")
-        print ch
+
+        os.write(fdw, ch)
+
+        if '\b' == ch:
+            sys.stdout.flush()
+        if '\n' == ch:
+            os.write(fdw, PROMPT)
         if ch and (ch[0] == 'q'):
+            os.write(fdw, '\n')
             break
+
 
 def main():
     term_set_canonical(1)
