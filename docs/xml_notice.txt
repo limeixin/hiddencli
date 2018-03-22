@@ -1,0 +1,16 @@
+1. xml attributes value must use "", for exemple: <note date="2018/03/22"> </note> is ok, but <note date=2018/03/22> </note> is error.
+2. some char need transferred while use it.
+    <  use &lt;  instead
+    >  use &gt;  instead
+    &  use &amp; instead
+    '  use &apos;  instead
+    "  use &quot;  instead
+3. comment exemple: <!-- This is a comment -->
+4. 
+<ROOT>
+    <COMMAND name="show" help="display some config">
+        <ACTION>ls</ACTION>
+    </COMMAND>
+    <COMMAND name="start" help="">
+    </COMMAND>
+</ROOT>

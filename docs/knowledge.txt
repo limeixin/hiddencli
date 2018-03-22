@@ -1,0 +1,6 @@
+knowledge about code:
+1. sys.stdout.write() need fush, os.write() needn't.
+2. '\b' can move cursor position, but the char still present.
+3. '\r' in linux can move cursor to head of the line, and no new line.
+4. if we want delete command line that already on console screen display, can use ' ' whitespace cover up. ???
+
