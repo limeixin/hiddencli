@@ -12,14 +12,33 @@ import signal
 ######
 # need move to config file
 ######
-PROMPT = "hidden> "
+PROMPT = "hidden>"
 TIMEOUT_PASSWD = 10
+CMD_SPECIAL_CHAR = "-_|/. "
+CMD_MAX_LEN = 128
+HISTORY_MAX = 10
 
 ####
 # global variable
 ####
 term_original = None
 ######
+
+# macro definition
+#CHAR_TYPE_CTL = 1
+#CHAR_TYPE_CMD = 2
+
+#UP_ARROW    = 1
+#DOWN_ARROW  = 2
+#RIGHT_ARROW = 3
+#LEFT_ARROW  = 4
+
+#keyboard shortcuts
+CTRL_A = 1
+CTRL_E = 5
+CTRL_N = 14
+CTRL_P = 16
+KEY_DEL = 127
 
 def getpasswd(prompt="Password: "):
     fd = sys.stdin.fileno()
@@ -71,35 +90,187 @@ def term_set_canonical(enable):
     else:
         termios.tcsetattr(fd, termios.TCSADRAIN, term_original)
 
+#ch only 1 char
+def is_cli_char(ch):
+    if (ch.isalnum() or (ch in CMD_SPECIAL_CHAR)):
+        return True
+    return False
+
+
+def exec_cli(cli):
+    if cli == "quit" or cli == "exit":
+        sys.exit()
+    else:
+        print("==> you input cli:\n" + cli)
+
 
 def run_cmd():
     fdw = sys.stdout.fileno()
     os.write(fdw, PROMPT)
-    while(True):
-#        sys.stdout.write("please input:")
-#        sys.stdout.flush()
+
+    #define variable
+    currline = []
+    history_position = 0
+    history = []
+    last_position = 0  #cursor position
+
+    while True:
+#       sys.stdout.write("please input:")
+#       sys.stdout.flush()
 
         ch = os.read(sys.stdin.fileno(), 1)
 
-        os.write(fdw, ch)
+        # 1. Control key
+        #if '^[' == ch:
+        if ord(ch) == 27:
+            ch = os.read(sys.stdin.fileno(), 1)
+            #if '[' == ch:
+            if ord(ch) == 91:
+                ch = os.read(sys.stdin.fileno(), 1)
 
-        if '\b' == ch:
-            sys.stdout.flush()
-        if '\n' == ch:
-            os.write(fdw, PROMPT)
-        if ch and (ch[0] == 'q'):
+                # UP_ARROW
+                if 'A' == ch:
+                    if 0 == history_position: #no history more
+                        os.write(fdw, '\a') #use bell
+                    else:
+                        history_position -= 1
+                        os.write(fdw, '\r' + ' ' * (len(currline) + len(PROMPT)) + '\r') #cover up old line
+                        os.write(fdw, PROMPT)
+                        os.write(fdw, history[history_position]) #display select history line
+                        currline = list(history[history_position])
+                        last_position = len(currline)
+
+                # DOWN_ARROW
+                elif 'B' == ch:
+                    if len(history) == history_position: #no history more
+                        os.write(fdw, '\a') #use bell
+                    else:
+                        os.write(fdw, '\r' + ' ' * (len(currline) + len(PROMPT)) + '\r') #cover up old line
+                        os.write(fdw, PROMPT)
+                        os.write(fdw, history[history_position]) #display select history line
+                        currline = list(history[history_position])
+                        last_position = len(currline)
+                        history_position += 1
+
+                # RIGHT_ARROW
+                elif 'C' == ch:
+                    if len(currline) == last_position:
+                        os.write(fdw, '\a') #use bell
+                    else:
+                        os.write(fdw, currline[last_position])
+                        last_position += 1
+
+                # LEFT_ARROW
+                elif 'D' == ch:
+                    if 0 == last_position:  #no left more.
+                        os.write(fdw, '\a') #use bell
+                    else:
+                        os.write(fdw, '\b')
+                        last_position -= 1
+
+                # other ctl key ignore
+                else:
+                    os.write(fdw, '\a') #use bell
+        # 2. Entry
+        elif '\n' == ch:
             os.write(fdw, '\n')
-            break
+
+            #record to history, except empty line.
+            if len(currline) != 0:
+                history.append(''.join(currline))
+                history_position = len(history)
+
+                #clear old history record line
+                if len(history) == HISTORY_MAX:
+                    del(history[0])
+                    history_position -= 1
+
+                #clear currline char
+                currline = []
+                last_position = 0
+
+                #execute cli program
+                exec_cli(history[history_position-1].strip())
+
+            #echo prompt
+            os.write(fdw, PROMPT)
+
+        # 3. Help key
+        elif '?' == ch:
+            pass
+            #FIX
+
+        # 4. Table key
+        elif '\t' == ch:
+            pass
+            #fix
+
+        # 5. Backspace
+        elif '\b' == ch:
+            #delete char
+            if last_position > 0:
+                last_position -= 1
+                del(currline[last_position])
+
+                #delete screen
+                if len(currline) == last_position:
+                    os.write(fdw, '\b \b')
+                else:
+                    os.write(fdw, '\b')
+                    os.write(fdw, ''.join(currline[last_position:]))
+                    os.write(fdw, ' \b') #cover up last char space
+                    os.write(fdw, '\b' * len(currline[last_position:]))
+            else:
+                os.write(fdw, '\a') #use bell
+
+        # 6. CLI char
+        elif is_cli_char(ch):
+            if len(currline) >= CMD_MAX_LEN :
+                os.write(fdw, '\a') #use bell
+            else:
+                currline.insert(last_position, ch)
+                last_position += 1
+
+                #cursor at tail
+                if len(currline) == last_position :
+                    os.write(fdw, ch)
+                #cursor not at tail
+                else:
+                    os.write(fdw, ''.join(currline[last_position-1:]))
+                    os.write(fdw, '\b' * len(currline[last_position:]))
+
+        # 7. Other char
+        else:
+            #keyboard shortcuts
+            if ord(ch) == KEY_DEL:
+                pass
+            elif ord(ch) == CTRL_A:
+                pass
+            else:
+                #ignore other char
+                os.write(fdw, '\a')
+
+
+def env_check():
+    if os.name != 'posix':
+        print("Please run this in posix OS, for example: Linux.")
+        sys.exit()
+    if (sys.version_info[0] != 2) or (sys.version_info[1] != 7):
+        print("Program environment need 2.7, other env has not test.")
+        sys.exit()
 
 
 def main():
     term_set_canonical(1)
     try:
         run_cmd()
+    except KeyboardInterrupt:
+        return  #need ignore
     finally:
         term_set_canonical(0)
 
 if __name__ == '__main__':
+    env_check()
     user_authentication()
     main()
 
