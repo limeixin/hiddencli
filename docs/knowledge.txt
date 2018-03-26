@@ -5,5 +5,7 @@ knowledge about code:
 4. if we want delete command line that already on console screen display, can use ' ' whitespace cover up.
 5. if move cursor to left, use print '\b', if move to right use print char
 6. '^[' can not use for if '^[' == ch: , must use if ord(ch)==27:
+7. while show help info use <CR> or <LF> . CR is '\r', it's ASCII is 13; and LF is '\n', it's ASCII is 10
+
 
 

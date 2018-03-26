@@ -7,6 +7,7 @@ import termios
 import xml.etree.ElementTree as ET
 import datetime
 import signal
+import ConfigParser
 
 
 ######
@@ -21,7 +22,15 @@ HISTORY_MAX = 10
 ####
 # global variable
 ####
+INI_FILE = "./hidden.ini"
+INI_SECTION_CMDFILE = "cmdfile"
+INI_OPTION_CMDFILE = "cmd_help_file"
+INI_SECTION_CFG = "programcfg"
+INI_OPTION_PASSTIMEOUT = "input_password_timeout"
+INI_OPTION_PROMPT = "prompt"
+INI_OPTION_HISTORY = "history_line_max"
 term_original = None
+xml_root = None
 ######
 
 # macro definition
@@ -102,6 +111,24 @@ def exec_cli(cli):
         sys.exit()
     else:
         print("==> you input cli:\n" + cli)
+
+
+def cmd_help_print(fdw, str):
+    if len(str) == 0:
+        for i in xml_root:
+#            os.write(fdw, i.tag)
+            if i.attrib.has_key('name'):
+                os.write(fdw, i.attrib['name'].ljust(20))
+            if i.attrib.has_key('help'):
+                os.write(fdw, '-'+ i.attrib['help'])
+            os.write(fdw, '\n')
+    else:
+        pass
+
+            
+
+def cmd_table_complete():
+    pass
 
 
 def run_cmd():
@@ -197,12 +224,14 @@ def run_cmd():
 
         # 3. Help key
         elif '?' == ch:
-            pass
-            #FIX
+            os.write(fdw, '?\n')
+            cmd_help_print(fdw, ''.join(currline).lstrip())
+            os.write(fdw, PROMPT)
+            os.write(fdw, ''.join(currline))
 
         # 4. Table key
         elif '\t' == ch:
-            pass
+            cmd_table_complete()
             #fix
 
         # 5. Backspace
@@ -269,9 +298,54 @@ def main():
     finally:
         term_set_canonical(0)
 
+
+def init_config():
+    global PROMPT
+    global TIMEOUT_PASSWD
+    global HISTORY_MAX
+    global xml_root
+    try:
+        cfg = ConfigParser.ConfigParser()
+        cfg.read(INI_FILE)
+        # read config from ini file, if not exist then use default config.
+        if cfg.has_section(INI_SECTION_CFG):
+            if cfg.has_option(INI_SECTION_CFG, INI_OPTION_PROMPT):
+                tmp = cfg.get(INI_SECTION_CFG, INI_OPTION_PROMPT)
+                if len(tmp) > 0:
+                    PROMPT = tmp
+            if cfg.has_option(INI_SECTION_CFG, INI_OPTION_PASSTIMEOUT):
+                timeo = cfg.get(INI_SECTION_CFG, INI_OPTION_PASSTIMEOUT)
+                if len(timeo) > 0 and timeo.isdigit():
+                    TIMEOUT_PASSWD = int(timeo)
+            if cfg.has_option(INI_SECTION_CFG, INI_OPTION_HISTORY):
+                h_max = cfg.get(INI_SECTION_CFG, INI_OPTION_HISTORY)
+                if len(h_max) > 0 and h_max.isdigit():
+                    HISTORY_MAX = int(h_max)
+
+        # read xml command file. if not exist then means no command, so exit program.
+        if cfg.has_section(INI_SECTION_CMDFILE):
+            if cfg.has_option(INI_SECTION_CMDFILE, INI_OPTION_CMDFILE):
+                cmdfile = cfg.get(INI_SECTION_CMDFILE, INI_OPTION_CMDFILE)
+                if len(cmdfile) > 0:
+                    tree = ET.parse(cmdfile)
+                    xml_root = tree.getroot()
+                else:
+                    sys.exit()
+            else:
+                sys.exit()
+        else:
+            sys.exit()
+
+    except Exception, e: #IOError:
+        print "read config file failed."
+        print str(e)
+        sys.exit()
+
+
 if __name__ == '__main__':
     env_check()
     user_authentication()
+    init_config()
     main()
 
 

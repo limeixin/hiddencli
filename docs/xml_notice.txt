@@ -6,11 +6,85 @@
     '  use &apos;  instead
     "  use &quot;  instead
 3. comment exemple: <!-- This is a comment -->
-4. 
+4. for exemple
 <ROOT>
     <COMMAND name="show" help="display some config">
         <ACTION>ls</ACTION>
     </COMMAND>
-    <COMMAND name="start" help="">
+    <COMMAND name="logout" help="">
+        <ACTION builtin="bash_exit"/>
     </COMMAND>
 </ROOT>
+
+5.
+<tag attrib1=1>text</tag>tail
+  1     2        3         4
+
+5.1 tag can use following:
+    <NAMESPACE>
+    <CONFIG>
+    <PARAM>
+    <VIEW>
+    <COMMAND>
+    <ACTION>
+    <STARTUP>
+    <HOTKEY>
+5.2 attrib can use following:
+name
+help
+interrupt="true" or interrupt="false"
+builtin
+ref
+optional="true"
+ptype="UINT" or ptype="SUBCOMMAND"
+shebang
+    <ACTION shebang="/bin/bash">echo "hello world!"</ACTION>
+
+------------------------
+python xml.etree.ElementTree
+------------------------
+xml have:
+1. tag              =string
+2. attrib           =dictionary
+3. text             =string
+4. tail             =string
+5. child elements
+
+<tag attrib1=1>text</tag>tail
+  1     2        3         4
+
+#以下方法与Element类中同名方法近似，区别在于它们指定以根节点作为操作对象。
+    find(match)
+    findall(match)
+    findtext(match, default=None)
+    getroot()：获取根节点.
+    iter(tag=None)
+    iterfind(match)
+    parse(source, parser=None)：装载xml对象，source可以为文件名或文件类型对象.
+    write(file, encoding="us-ascii", xml_declaration=None, default_namespace=None,method="xml")
+
+#class xml.etree.ElementTree.Element(tag, attrib={}, **extra)
+tag：string，元素代表的数据种类。
+text：string，元素的内容。
+tail：string，元素的尾形。
+attrib：dictionary，元素的属性字典。
+
+#针对属性的操作
+clear()：清空元素的后代、属性、text和tail也设置为None。
+get(key, default=None)：获取key对应的属性值，如该属性不存在则返回default值。
+items()：根据属性字典返回一个列表，列表元素为(key, value）。
+keys()：返回包含所有元素属性键的列表。
+set(key, value)：设置新的属性键与值。
+
+#针对后代的操作
+append(subelement)：添加直系子元素。
+extend(subelements)：增加一串元素对象作为子元素。＃python2.7新特性
+find(match)：寻找第一个匹配子元素，匹配对象可以为tag或path。
+findall(match)：寻找所有匹配子元素，匹配对象可以为tag或path。
+findtext(match)：寻找第一个匹配子元素，返回其text值。匹配对象可以为tag或path。
+insert(index, element)：在指定位置插入子元素。
+iter(tag=None)：生成遍历当前元素所有后代或者给定tag的后代的迭代器。＃python2.7新特性
+iterfind(match)：根据tag或path查找所有的后代。
+itertext()：遍历所有后代并返回text值。
+remove(subelement)：删除子元素。
+
