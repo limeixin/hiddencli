@@ -106,11 +106,11 @@ def is_cli_char(ch):
     return False
 
 
-def exec_cli(cli):
+def exec_cli(pname, cli):
     if cli == "quit" or cli == "exit":
         sys.exit()
     else:
-        print("==> you input cli:\n" + cli)
+        print(pname + "==>exec==>" + cli)
 
 
 def print_node(fdw, node):
@@ -320,7 +320,18 @@ def run_cmd():
                 last_position = 0
 
                 #execute cli program
-                exec_cli(history[history_position-1].strip())
+                cmdlist = history[-1].strip().split(' ')
+                childs = path_tail_nodes(cmdlist)
+                for child in childs:
+                    for node in child.getchildren():
+                        if node.tag == "ACTION":
+                            pname = node.text
+                            if len(pname) > 0:
+                                exec_cli(pname, history[history_position-1].strip())
+                            else:
+                                os.write(fdw, "Warning: Tis command no program name in action.\n")
+                        else:
+                            os.write(fdw, "Warning: Tis command no action.\n")
 
             #echo prompt
             os.write(fdw, PROMPT)

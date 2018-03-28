@@ -36,4 +36,7 @@
             echo "good afternoon"
         </ACTION>
     </COMMAND>
+    <COMMAND name="quit" help="Exit hidden command line">
+        <ACTION>program-quit</ACTION>
+    </COMMAND>
 </CLIROOT>
