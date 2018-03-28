@@ -3,24 +3,37 @@
 <!-- notices -->
 
 
-<command>
-    <COMMAND name="show">
-        <PARAM name="1-10" />
+<CLIROOT>
+    <COMMAND name="show" help="Display info">
+        <COMMAND name="test1" help="This is test 1">
+            <COMMAND name="test2" help="This is test 2">
+                <PARAM name="1-10" help="This is param">
+                    <ACTION>main</ACTION>
+                </PARAM>
+            </COMMAND>
+        </COMMAND>
+
+        <COMMAND name="abc" help="This is abc">
+            <COMMAND name="def" help="This is def">
+                <PARAM name="2-4" help="This is param">
+                    <ACTION>main</ACTION>
+                </PARAM>
+            </COMMAND>
+        </COMMAND>
     </COMMAND>
 
     <COMMAND name="ifconfig" help="Config nic" >
-        <PARAM name="" type="value" value_guide="eth0-eth10" help="Specifical a net card" >
-            <PARAM>
+        <PARAM name="[eth0-3]" ptype="value" help="Specifical a net card" >
+            <PARAM name="x.x.x.x" help="IP address">
                 <ACTION type="">program-name</ACTION>
             </PARAM>
         </PARAM>
     </COMMAND>
 
-    <COMMAND name="test" help="run in bash">
+    <COMMAND name="test" help="Run in bash">
         <ACTION buildin= "true" shebang="/bin/bash">
             echo "good morning"
             echo "good afternoon"
         </ACTION>
-        <PARAM name="1-10" />
     </COMMAND>
-</command>
+</CLIROOT>

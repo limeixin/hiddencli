@@ -113,22 +113,125 @@ def exec_cli(cli):
         print("==> you input cli:\n" + cli)
 
 
+def print_node(fdw, node):
+    name = node.get('name')
+    help = node.get('help')
+    if name:
+        os.write(fdw, name.ljust(20))
+        if help:
+            os.write(fdw, '-' + help)
+        os.write(fdw, '\n')
+
+
+def print_all_child(fdw, node):
+    for i in node.getchildren():
+        print_node(fdw, i)
+
+
+def is_param_match(cmdkey, ptype):
+    return True
+
+
+def is_match(cmdkey, node):
+    if node.tag == "COMMAND" and node.get('name') == cmdkey:
+        return True
+    if node.tag == "PARAM" and is_param_match(cmdkey, node.get('ptype')):
+        return True
+    return False
+
+
+#callback for walk_tree
+#level start from 1
+g_match_nodes = []  #init it in path_tail_nodes
+def match_cb(node, level, cmdlist):
+    #level must start from 1, and cmdlist can not empty
+    global g_match_nodes
+    if is_match(cmdlist[level-1], node):
+        if len(cmdlist) == level:
+            g_match_nodes.append(node)
+        return True
+    else:
+        return False
+
+#notice: len(cmdlist) must > 0
+#level must start from 1
+def walk_tree(root, level, cb, cmdlist):
+    children = root.getchildren()
+    if len(children) == 0 or level > len(cmdlist):  
+        return
+    for child in children:
+        if True == cb(child, level, cmdlist):
+            walk_tree(child, level + 1, cb, cmdlist)
+    return
+
+def path_tail_nodes(cmdlist):
+    global g_match_nodes
+    g_match_nodes = []
+    if 0 == len(cmdlist):
+        g_match_nodes.append(xml_root)
+    else:
+        walk_tree(xml_root, 1, match_cb, cmdlist)
+    return g_match_nodes
+
+
 def cmd_help_print(fdw, str):
     if len(str) == 0:
-        for i in xml_root:
-#            os.write(fdw, i.tag)
-            if i.attrib.has_key('name'):
-                os.write(fdw, i.attrib['name'].ljust(20))
-            if i.attrib.has_key('help'):
-                os.write(fdw, '-'+ i.attrib['help'])
-            os.write(fdw, '\n')
+        print_all_child(fdw, xml_root)
+
+    elif str[-1] == ' ':
+        have_action = False
+        cmdlist = str.strip().split(' ')
+        nodes = path_tail_nodes(cmdlist)
+        for n in nodes:
+#            print_all_child(fdw, n)
+            for i in n.getchildren():
+                print_node(fdw, i)
+                if i.tag == "ACTION":
+                    have_action = True
+        if have_action:
+            os.write(fdw, '<LF>\n')
+
     else:
-        pass
+        cmdlist = str.strip().split(' ')
+        list_1 = cmdlist[:-1]
+        nodes = path_tail_nodes(list_1)
+        for n in nodes:
+            for n_curr in n.getchildren():
+                if ((n_curr.tag == "COMMAND" and n_curr.get('name').startswith(cmdlist[-1])) or 
+                    (n_curr.tag == "PARAM")):
+                    print_node(fdw, n_curr)
 
-            
 
-def cmd_table_complete():
-    pass
+def is_match_token(token, node):
+    if len(token) == 0:
+        return True
+    else:
+        if (node.tag == "COMMAND" and (not node.get('name').startswith(token))):
+            return False
+        else:
+            return True
+
+
+def cmd_table_try_complete(fdw, str):
+    nodes = []
+    tns = []
+    token = ''
+    if len(str) == 0:
+#        print_all_child(fdw, xml_root)
+        return nodes
+
+    cmdlist = str.strip().split(' ')
+    if str[-1] == ' ':
+        nodes = path_tail_nodes(cmdlist)
+    else:
+        token = cmdlist[-1]
+        nodes = path_tail_nodes(cmdlist[:-1])
+
+    for lastnode in nodes:
+        for tn in lastnode.getchildren():
+            if is_match_token(token, tn):
+                tns.append(tn)
+    return tns
 
 
 def run_cmd():
@@ -231,8 +334,41 @@ def run_cmd():
 
         # 4. Table key
         elif '\t' == ch:
-            cmd_table_complete()
-            #fix
+            tns = cmd_table_try_complete(fdw, ''.join(currline).lstrip())
+            tns_len = len(tns)
+            if tns_len == 0:
+                pass
+            elif tns_len == 1 and tns[0].tag == "COMMAND":
+                    tn_name = tns[0].get('name')
+                    tn_name_len = len(tn_name)
+                    if tn_name_len > 0:
+                        if currline[-1] == ' ':
+                            os.write(fdw, tn_name)
+                            currline = currline[:] + list(tn_name)
+                            last_position = last_position + tn_name_len
+                        else:
+                            tokenlist = ''.join(currline).split(' ')
+                            token = tokenlist[-1]
+                            tokenlen = len(token)
+                            outstr = tn_name[tokenlen:]
+                            if len(outstr) == 0:
+                                outstr = ' '
+                            os.write(fdw, outstr)
+                            currline = currline[:] + list(outstr)
+                            last_position = last_position + len(outstr)
+                    else:
+                        pass
+            else:
+                have_action = False
+                os.write(fdw, '\n')
+                for tnode in tns:
+                    print_node(fdw, tnode)
+                    if tnode.tag == "ACTION":
+                        have_action = True
+                if have_action:
+                    os.write(fdw, '<LF>\n')
+                os.write(fdw, PROMPT)
+                os.write(fdw, ''.join(currline))
 
         # 5. Backspace
         elif '\b' == ch:
