@@ -8,7 +8,7 @@
         <COMMAND name="test1" help="This is test 1">
             <COMMAND name="test2" help="This is test 2">
                 <PARAM name="1-10" help="This is param">
-                    <ACTION>main</ACTION>
+                    <ACTION>echo</ACTION>
                 </PARAM>
             </COMMAND>
         </COMMAND>
@@ -16,27 +16,34 @@
         <COMMAND name="abc" help="This is abc">
             <COMMAND name="def" help="This is def">
                 <PARAM name="2-4" help="This is param">
-                    <ACTION>main</ACTION>
+                    <ACTION>echo</ACTION>
                 </PARAM>
             </COMMAND>
         </COMMAND>
     </COMMAND>
 
     <COMMAND name="ifconfig" help="Config nic" >
-        <PARAM name="[eth0-3]" ptype="value" help="Specifical a net card" >
+        <PARAM name="[eth0-3]" ptype="value" help="Specifical a net card">
             <PARAM name="x.x.x.x" help="IP address">
-                <ACTION type="">program-name</ACTION>
+                <ACTION></ACTION>
             </PARAM>
+            <ACTION></ACTION>
         </PARAM>
+        <ACTION></ACTION>
     </COMMAND>
 
     <COMMAND name="test" help="Run in bash">
-        <ACTION buildin= "true" shebang="/bin/bash">
-            echo "good morning"
-            echo "good afternoon"
-        </ACTION>
+        <ACTION>echo "hello world!"</ACTION>
     </COMMAND>
-    <COMMAND name="quit" help="Exit hidden command line">
-        <ACTION>program-quit</ACTION>
+
+    <COMMAND name="ls" help="Test ls shell">
+        <ACTION></ACTION>
+    </COMMAND>
+
+    <COMMAND name="quit" help="Quit hidden command line">
+        <ACTION/>
+    </COMMAND>
+    <COMMAND name="exit" help="Exit hidden command line">
+        <ACTION/>
     </COMMAND>
 </CLIROOT>

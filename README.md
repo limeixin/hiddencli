@@ -25,16 +25,17 @@ process command line for administrator or root user
         ---------------
         name    used in <COMMAND> for key name, and used in <PARAM> for ? info
         help    used in <COMMAND> for key description, and used in <PARAM> for param
-        ptype   used in <PARAM> for check param value.
 
         not must set attrib
         -------------------
-        optional    used in <COMMAND> and <PARAM>, if optional="true", the cmd key or param is optional, default is false.
+        ptype   used in <PARAM> for check param value.
+        replace used in <ACTION>, if replace="True", input cmd line not as arguments of <ACTION> node.text.
+#        optional    used in <COMMAND> and <PARAM>, if optional="true", the cmd key or param is optional, default is false.
 #        require_arg used in <COMMAND>, if require_arg="true", this cmd key must follow param. default is false.
-        interrupt   used in <ACTION> , it can "true" or "false", for interrupt cmd callback running. default is false.
-        builtin     used in <ACTION>, if if builtin="true", <ACTION> need not callback, it run user input directly.
-                    if builtin="false", it run callback program and user input as param of callback. default is false.
-        shebang     used while builtin="true" in <ACTION>, for example: shebang="/bin/bash"
+#        interrupt   used in <ACTION> , it can "true" or "false", for interrupt cmd callback running. default is false.
+#        builtin     used in <ACTION>, if if builtin="true", <ACTION> need not callback, it run user input directly.
+#                    if builtin="false", it run callback program and user input as param of callback. default is false.
+#        shebang     used while builtin="true" in <ACTION>, for example: shebang="/bin/bash"
     3)text
         text used for <ACTION>, it is callback program name, for example: <ACTION>exec_cmd</ACTION>
 
