@@ -167,7 +167,7 @@ def match_cb(node, level, cmdlist):
 #level must start from 1
 def walk_tree(root, level, cb, cmdlist):
     children = root.getchildren()
-    if len(children) == 0 or level > len(cmdlist):  
+    if len(children) == 0 or level > len(cmdlist):
         return
     for child in children:
         if True == cb(child, level, cmdlist):
@@ -330,14 +330,16 @@ def run_cmd():
                 last_position = 0
 
                 #execute cli program
+                acted = False
                 cmdlist = history[-1].strip().split(' ')
                 childs = path_tail_nodes(cmdlist)
                 for child in childs:
                     for node in child.getchildren():
                         if node.tag == "ACTION":
+                            acted = True
                             exec_cli(node, history[history_position-1].strip())
-                        else:
-                            os.write(fdw, "Warning: Tis command no action.\n")
+                if not acted:
+                    os.write(fdw, "Warning: Tis command no action.\n")
 
             #echo prompt
             os.write(fdw, PROMPT)
