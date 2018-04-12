@@ -16,7 +16,7 @@
         <COMMAND name="abc" help="This is abc">
             <COMMAND name="def" help="This is def">
                 <PARAM name="2-4" help="This is param">
-                    <ACTION>echo</ACTION>
+                    <ACTION>/bin/echo</ACTION>
                 </PARAM>
             </COMMAND>
         </COMMAND>

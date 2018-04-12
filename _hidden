@@ -24,6 +24,8 @@ HISTORY_MAX = 10
 # global variable
 ####
 INI_FILE = "./hidden.ini"
+#
+#
 INI_SECTION_CMDFILE = "cmdfile"
 INI_OPTION_CMDFILE = "cmd_help_file"
 INI_SECTION_CFG = "programcfg"
@@ -33,15 +35,6 @@ INI_OPTION_HISTORY = "history_line_max"
 term_original = None
 xml_root = None
 ######
-
-# macro definition
-#CHAR_TYPE_CTL = 1
-#CHAR_TYPE_CMD = 2
-
-#UP_ARROW    = 1
-#DOWN_ARROW  = 2
-#RIGHT_ARROW = 3
-#LEFT_ARROW  = 4
 
 #keyboard shortcuts
 CTRL_A = 1
@@ -113,7 +106,7 @@ def exec_cli(node, cli):
     else:
         exec_str = ''
         if node.text:
-            if node.get('replace'):
+            if node.get('replace') == 'True':
                 exec_str = node.text
             else:
                 exec_str = node.text + ' ' + cli
@@ -127,7 +120,7 @@ def print_node(fdw, node):
     name = node.get('name')
     help = node.get('help')
     if name:
-        os.write(fdw, name.ljust(20))
+        os.write(fdw, name.ljust(18))
         if help:
             os.write(fdw, '-' + help)
         os.write(fdw, '\n')
@@ -153,12 +146,20 @@ def is_match(cmdkey, node):
 #callback for walk_tree
 #level start from 1
 g_match_nodes = []  #init it in path_tail_nodes
+g_match_depth = 0
 def match_cb(node, level, cmdlist):
     #level must start from 1, and cmdlist can not empty
     global g_match_nodes
+    global g_match_depth
+
     if is_match(cmdlist[level-1], node):
         if len(cmdlist) == level:
             g_match_nodes.append(node)
+
+        #only for '\n' process
+        if g_match_depth < level:
+            g_match_depth = level
+
         return True
     else:
         return False
@@ -176,7 +177,10 @@ def walk_tree(root, level, cb, cmdlist):
 
 def path_tail_nodes(cmdlist):
     global g_match_nodes
+    global g_match_depth
     g_match_nodes = []
+    g_match_depth = 0
+
     if 0 == len(cmdlist):
         g_match_nodes.append(xml_root)
     else:
@@ -190,10 +194,9 @@ def cmd_help_print(fdw, str):
 
     elif str[-1] == ' ':
         have_action = False
-        cmdlist = str.strip().split(' ')
+        cmdlist = str.strip().split()
         nodes = path_tail_nodes(cmdlist)
         for n in nodes:
-#            print_all_child(fdw, n)
             for i in n.getchildren():
                 print_node(fdw, i)
                 if i.tag == "ACTION":
@@ -202,7 +205,7 @@ def cmd_help_print(fdw, str):
             os.write(fdw, '<LF>\n')
 
     else:
-        cmdlist = str.strip().split(' ')
+        cmdlist = str.strip().split()
         list_1 = cmdlist[:-1]
         nodes = path_tail_nodes(list_1)
         for n in nodes:
@@ -230,7 +233,7 @@ def cmd_table_try_complete(fdw, str):
 #        print_all_child(fdw, xml_root)
         return nodes
 
-    cmdlist = str.strip().split(' ')
+    cmdlist = str.strip().split()
     if str[-1] == ' ':
         nodes = path_tail_nodes(cmdlist)
     else:
@@ -242,6 +245,24 @@ def cmd_table_try_complete(fdw, str):
             if is_match_token(token, tn):
                 tns.append(tn)
     return tns
+
+
+def match_depth_len_for_keys(cmdline, depth):
+    i = 0
+    length = 0
+    keys = 0
+    cmdlen = len(cmdline)
+    while keys < depth:
+        while i < cmdlen and cmdline[i] == ' ':
+            i += 1
+            length += 1
+
+        if i < cmdlen and cmdline[i] != ' ':
+            keys += 1
+            while i < cmdlen and cmdline[i] != ' ':
+                i += 1
+                length += 1
+    return length
 
 
 def run_cmd():
@@ -331,15 +352,21 @@ def run_cmd():
 
                 #execute cli program
                 acted = False
-                cmdlist = history[-1].strip().split(' ')
+                cmdlist = history[-1].strip().split() #split(' ') no args ' ' can process multp whitespace.
                 childs = path_tail_nodes(cmdlist)
                 for child in childs:
                     for node in child.getchildren():
                         if node.tag == "ACTION":
                             acted = True
-                            exec_cli(node, history[history_position-1].strip())
+                            exec_cli(node, history[-1].strip())
                 if not acted:
-                    os.write(fdw, "Warning: Tis command no action.\n")
+                    #first error key position
+                    e_len = match_depth_len_for_keys(history[-1], g_match_depth)
+                    while len(history[-1]) > e_len and history[-1][e_len] == ' ':
+                        e_len += 1
+                    os.write(fdw, (' ' * (len(PROMPT) + e_len)) + '^\n')
+
+                    os.write(fdw, "Error: Tis command no action.\n")
 
             #echo prompt
             os.write(fdw, PROMPT)
@@ -366,7 +393,7 @@ def run_cmd():
                             currline = currline[:] + list(tn_name)
                             last_position = last_position + tn_name_len
                         else:
-                            tokenlist = ''.join(currline).split(' ')
+                            tokenlist = ''.join(currline).split()
                             token = tokenlist[-1]
                             tokenlen = len(token)
                             outstr = tn_name[tokenlen:]
@@ -455,10 +482,27 @@ def main():
 
 
 def init_config():
+    global INI_FILE
     global PROMPT
     global TIMEOUT_PASSWD
     global HISTORY_MAX
     global xml_root
+
+    #find INI file
+    if os.path.exists(r'./hidden.ini'):
+        INI_FILE = r'./hidden.ini'
+    elif os.path.exists(r'~/hidden.ini'):
+        INI_FILE = r'~/hidden.ini'
+    elif os.path.exists(r'/etc/hidden/hidden.ini'):
+        INI_FILE = r'/etc/hidden/hidden.ini'
+    elif os.path.exists(r'/etc/hidden.ini'):
+        INI_FILE = r'/etc/hidden.ini'
+    elif os.path.exists(r'/etc/sysconfig/hidden.ini'):
+        INI_FILE = r'/etc/sysconfig/hidden.ini'
+    else:
+        print "Error: Can not find ini file for configuration."
+        sys.exit()
+
     try:
         cfg = ConfigParser.ConfigParser()
         cfg.read(INI_FILE)
