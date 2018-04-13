@@ -1,4 +1,24 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#  
+#  Copyright 2018 James <James.limeixin@gmail.com>
+#  
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#
+#
 
 import os
 import readline
@@ -12,7 +32,8 @@ import subprocess
 
 
 ######
-# need move to config file
+# This variable can set value in config file
+# But need not delete it in here.
 ######
 PROMPT = "hidden>"
 TIMEOUT_PASSWD = 10
@@ -93,6 +114,7 @@ def term_set_canonical(enable):
     else:
         termios.tcsetattr(fd, termios.TCSADRAIN, term_original)
 
+
 #ch only 1 char
 def is_cli_char(ch):
     if (ch.isalnum() or (ch in CMD_SPECIAL_CHAR)):
@@ -164,6 +186,7 @@ def match_cb(node, level, cmdlist):
     else:
         return False
 
+
 #notice: len(cmdlist) must > 0
 #level must start from 1
 def walk_tree(root, level, cb, cmdlist):
@@ -230,7 +253,6 @@ def cmd_table_try_complete(fdw, str):
     tns = []
     token = ''
     if len(str) == 0:
-#        print_all_child(fdw, xml_root)
         return nodes
 
     cmdlist = str.strip().split()
@@ -276,9 +298,6 @@ def run_cmd():
     last_position = 0  #cursor position
 
     while True:
-#       sys.stdout.write("please input:")
-#       sys.stdout.flush()
-
         ch = os.read(sys.stdin.fileno(), 1)
 
         # 1. Control key
@@ -462,12 +481,35 @@ def run_cmd():
                 os.write(fdw, '\a')
 
 
+def ini_file_exist():
+    global INI_FILE
+
+    #find INI file
+    if os.path.exists(r'./hidden.ini'):
+        INI_FILE = r'./hidden.ini'
+    elif os.path.exists(r'~/hidden.ini'):
+        INI_FILE = r'~/hidden.ini'
+    elif os.path.exists(r'/etc/hidden/hidden.ini'):
+        INI_FILE = r'/etc/hidden/hidden.ini'
+    elif os.path.exists(r'/etc/hidden.ini'):
+        INI_FILE = r'/etc/hidden.ini'
+    elif os.path.exists(r'/etc/sysconfig/hidden.ini'):
+        INI_FILE = r'/etc/sysconfig/hidden.ini'
+    else:
+        return False
+
+    return True
+
+
 def env_check():
     if os.name != 'posix':
         print("Please run this in posix OS, for example: Linux.")
         sys.exit()
     if (sys.version_info[0] != 2) or (sys.version_info[1] != 7):
         print("Program environment need 2.7, other env has not test.")
+        sys.exit()
+    if not ini_file_exist():
+        print "Error: Can not find ini file for configuration."
         sys.exit()
 
 
@@ -487,21 +529,6 @@ def init_config():
     global TIMEOUT_PASSWD
     global HISTORY_MAX
     global xml_root
-
-    #find INI file
-    if os.path.exists(r'./hidden.ini'):
-        INI_FILE = r'./hidden.ini'
-    elif os.path.exists(r'~/hidden.ini'):
-        INI_FILE = r'~/hidden.ini'
-    elif os.path.exists(r'/etc/hidden/hidden.ini'):
-        INI_FILE = r'/etc/hidden/hidden.ini'
-    elif os.path.exists(r'/etc/hidden.ini'):
-        INI_FILE = r'/etc/hidden.ini'
-    elif os.path.exists(r'/etc/sysconfig/hidden.ini'):
-        INI_FILE = r'/etc/sysconfig/hidden.ini'
-    else:
-        print "Error: Can not find ini file for configuration."
-        sys.exit()
 
     try:
         cfg = ConfigParser.ConfigParser()
@@ -546,3 +573,4 @@ if __name__ == '__main__':
     user_authentication()
     init_config()
     main()
+

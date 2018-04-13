@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<!-- notices -->
-
-
 <CLIROOT>
     <COMMAND name="show" help="Display info">
         <COMMAND name="test1" help="This is test 1">
@@ -40,6 +37,8 @@
         <ACTION></ACTION>
     </COMMAND>
 
+<!-- notices: quit and exit, is already used as buildin command key -->
+<!-- notices: please keep quit and exit command, need not delete it -->
     <COMMAND name="quit" help="Quit hidden command line">
         <ACTION/>
     </COMMAND>
