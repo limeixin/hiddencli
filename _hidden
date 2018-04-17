@@ -157,7 +157,14 @@ def is_param_match(cmdkey, ptype):
     return True
 
 
+##
+#notice:
+# 1. if want support Incomplete matching, can use:
+#    node.get('name').startswith(cmdkey)
+# 2. if want support complete matching only, can use:
+#    node.get('name') == cmdkey
 def is_match(cmdkey, node):
+#    if node.tag == "COMMAND" and node.get('name').startswith(cmdkey):
     if node.tag == "COMMAND" and node.get('name') == cmdkey:
         return True
     if node.tag == "PARAM" and is_param_match(cmdkey, node.get('ptype')):
@@ -370,22 +377,29 @@ def run_cmd():
                 last_position = 0
 
                 #execute cli program
-                acted = False
+                action_node = None
+                action_node_num = 0
                 cmdlist = history[-1].strip().split() #split(' ') no args ' ' can process multp whitespace.
                 childs = path_tail_nodes(cmdlist)
                 for child in childs:
                     for node in child.getchildren():
                         if node.tag == "ACTION":
-                            acted = True
-                            exec_cli(node, history[-1].strip())
-                if not acted:
+                            action_node_num += 1
+                            action_node = node
+                if action_node_num != 1:
                     #first error key position
                     e_len = match_depth_len_for_keys(history[-1], g_match_depth)
                     while len(history[-1]) > e_len and history[-1][e_len] == ' ':
                         e_len += 1
                     os.write(fdw, (' ' * (len(PROMPT) + e_len)) + '^\n')
 
-                    os.write(fdw, "Error: Tis command no action.\n")
+                    if action_node_num < 1:
+                        os.write(fdw, "Error: No such command.\n")
+                    else:
+                        os.write(fdw, "Error: Input command match with non-uniqueness.\n")
+                else:
+                    #ok, exec command line
+                    exec_cli(action_node, history[-1].strip())
 
             #echo prompt
             os.write(fdw, PROMPT)
