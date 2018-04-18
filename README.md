@@ -37,4 +37,10 @@ process command line for administrator or root user
     3)text
         text used for <ACTION>, it is callback program name, for example: <ACTION>/bin/exec_cmd</ACTION>
 
+3. other Warning
+    command line support incomplete match, for example: 'show key' can input 's k' if uniqueness.
+    but some command can not differentiate them,
+    for example: input 'show key' can match 'show key' and 'show keyboard', 
+    in this case, can not know you want run 'show key' or 'show keyboard' command.
+    therefore, if want not keep "support incomplete match", you can modify code of _hidden.
 

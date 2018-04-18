@@ -20,9 +20,9 @@
     </COMMAND>
 
     <COMMAND name="ifconfig" help="Config nic" >
-        <PARAM name="[eth0-3]" ptype="value" help="Specifical a net card">
+        <PARAM name="eth[0-3]" ptype="value" help="Specifical a net card">
             <PARAM name="x.x.x.x" help="IP address">
-                <ACTION></ACTION>
+                <ACTION>echo</ACTION>
             </PARAM>
             <ACTION></ACTION>
         </PARAM>
@@ -31,6 +31,25 @@
 
     <COMMAND name="test" help="Run in bash">
         <ACTION>echo "hello world!"</ACTION>
+    </COMMAND>
+
+    <COMMAND name="testreplace" help="Run in bash">
+        <PARAM name="test-replace" ptype="value" help="PARAM">
+            <ACTION replace="True">ls</ACTION>
+        </PARAM>
+    </COMMAND>
+
+    <COMMAND name="param" help="Config nic" >
+        <PARAM name="eth[0-3]" ptype="value" help="Specifical a net card">
+            <ACTION>echo</ACTION>
+            <COMMAND name="good" help="IP address">
+                <PARAM name="[100-1000]" help="IP address">
+                    <ACTION>echo</ACTION>
+                </PARAM>
+                <ACTION>echo</ACTION>
+            </COMMAND>
+        </PARAM>
+        <ACTION>echo</ACTION>
     </COMMAND>
 
     <COMMAND name="ls" help="Test ls shell">

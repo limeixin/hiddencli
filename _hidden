@@ -164,8 +164,8 @@ def is_param_match(cmdkey, ptype):
 # 2. if want support complete matching only, can use:
 #    node.get('name') == cmdkey
 def is_match(cmdkey, node):
-#    if node.tag == "COMMAND" and node.get('name').startswith(cmdkey):
-    if node.tag == "COMMAND" and node.get('name') == cmdkey:
+    if node.tag == "COMMAND" and node.get('name').startswith(cmdkey):
+#    if node.tag == "COMMAND" and node.get('name') == cmdkey:
         return True
     if node.tag == "PARAM" and is_param_match(cmdkey, node.get('ptype')):
         return True
@@ -294,6 +294,56 @@ def match_depth_len_for_keys(cmdline, depth):
     return length
 
 
+#-------------------- begain for complete cmdlist -------------------
+g_cmdlist_complete = []
+def path_end(root, action_node, level, keys_num):
+    if level < keys_num:
+        return False
+    for node in root.getchildren():
+        if (level == keys_num) and (node is action_node): # and (node.tag == "ACTION")
+            return True
+ 
+    return False
+    
+def path_walk(root, action_node, level, keys_num):
+    global g_cmdlist_complete
+
+    if (level > keys_num) or (len(root.getchildren()) == 0):
+        return False
+    if level > 0 and (root.tag == "COMMAND" and 
+        ( not (root.get('name').startswith(g_cmdlist_complete[level-1])))):
+        return False
+
+    if path_end(root, action_node, level, keys_num):
+        return True
+
+    if level == keys_num: #walked all keys, but not path_end, need not check more.
+        return False
+
+    ret0 = False
+    for node in root.getchildren():
+        if (node.tag == "COMMAND" and 
+            ( not (node.get('name').startswith(g_cmdlist_complete[level])))):
+            continue
+        
+        ret = path_walk(node, action_node, level + 1, keys_num)
+        if ret:
+            ret0 = True
+            if node.tag == "COMMAND":
+                g_cmdlist_complete[level] = node.get('name')
+
+    return ret0
+
+
+def cmdlist_complete(action_node, cmdlist):
+    global g_cmdlist_complete
+    g_cmdlist_complete = cmdlist[:]
+    keys_num = len(cmdlist)
+    path_walk(xml_root, action_node, 0, keys_num)
+
+#-------------------- end for complete cmdlist -------------------
+
+
 def run_cmd():
     fdw = sys.stdout.fileno()
     os.write(fdw, PROMPT)
@@ -398,8 +448,23 @@ def run_cmd():
                     else:
                         os.write(fdw, "Error: Input command match with non-uniqueness.\n")
                 else:
+                    #ok, input command line is valid
+                    #complete the input command keys, into g_cmdlist_complete
+                    cmdlist_complete(action_node, cmdlist)
+                    #---------------------------------
+                    # Warning:
+                    # 1. 
+                    # if support incomplete match for input keys, then can not differentiate some:
+                    # for example: 1) show key   2)show keyboard
+                    # while input 'show key' command, then, can not know you want 'show key' or 'show keyboard'
+                    # 2.
+                    # if want not support incomplete match:
+                    # delete call cmdlist_complete(action_node, cmdlist)
+                    # and call exec_cli(action_node, history[-1].strip())
+                    #---------------------------------
+
                     #ok, exec command line
-                    exec_cli(action_node, history[-1].strip())
+                    exec_cli(action_node, ' '.join(g_cmdlist_complete))
 
             #echo prompt
             os.write(fdw, PROMPT)
