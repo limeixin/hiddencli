@@ -29,6 +29,7 @@ import datetime
 import signal
 import ConfigParser
 import subprocess
+import hashlib
 
 
 ######
@@ -53,6 +54,8 @@ INI_SECTION_CFG = "programcfg"
 INI_OPTION_PASSTIMEOUT = "input_password_timeout"
 INI_OPTION_PROMPT = "prompt"
 INI_OPTION_HISTORY = "history_line_max"
+INI_SECTION_SECURITY = "security"
+INI_OPTION_AUTH = "auth"
 term_original = None
 xml_root = None
 ######
@@ -77,6 +80,58 @@ def getpasswd(prompt="Password: "):
     return passwd
 
 
+def getpasswd_from_ini_file():
+    global INI_FILE
+    try:
+        cfg = ConfigParser.ConfigParser()
+        cfg.read(INI_FILE)
+        if (cfg.has_section(INI_SECTION_SECURITY) and 
+            cfg.has_option(INI_SECTION_SECURITY, INI_OPTION_AUTH)):
+            passwd = cfg.get(INI_SECTION_SECURITY, INI_OPTION_AUTH)
+            return passwd
+        return
+
+    except Exception, e: #IOError:
+        print "read config file failed.", str(e)
+        return
+
+
+def setpasswd_to_ini_file(passwd):
+    global INI_FILE
+
+    md5w = hashlib.md5()
+    md5w.update(passwd)
+    md5v = md5w.hexdigest()
+    try:
+        cfg = ConfigParser.ConfigParser()
+        cfg.read(INI_FILE)
+        if not cfg.has_section(INI_SECTION_SECURITY):
+            cfg.add_section(INI_SECTION_SECURITY)
+        cfg.set(INI_SECTION_SECURITY, INI_OPTION_AUTH, md5v)
+        cfg.write(open(INI_FILE, 'w'))
+
+    except Exception, e: #IOError:
+        print str(e)
+        return    
+
+def is_passwd_valid(password):
+    #use user set password if it exist.
+    pwd_md5 = getpasswd_from_ini_file()
+    if pwd_md5 != None:
+        md5i = hashlib.md5()
+        md5i.update(password)
+        if md5i.hexdigest() == pwd_md5:
+            return True
+
+    #default password
+    else:
+        i = datetime.datetime.now()
+        if password == str(i.year + i.month * 100 + i.day):
+            return True
+
+    return False
+
+
 def alarm_handler(signum, frame):
     raise KeyboardInterrupt
 
@@ -91,14 +146,14 @@ def user_authentication():
         sys.exit()
     else:
         signal.alarm(0)
-        i = datetime.datetime.now()
-#        if (('' == password) or (not password.isdigit()) or
-#           (i.year + i.month * 100 + i.day != int(password))):
-        if password != str(i.year + i.month * 100 + i.day):
-            print('')
-            sys.exit()
-        else:
-            print('')
+        print('')
+
+        #check password
+        if is_passwd_valid(password):
+            return
+
+        #input password wrong.
+        sys.exit()
 
 
 ##
