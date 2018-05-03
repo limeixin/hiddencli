@@ -88,7 +88,8 @@ def getpasswd_from_ini_file():
         if (cfg.has_section(INI_SECTION_SECURITY) and 
             cfg.has_option(INI_SECTION_SECURITY, INI_OPTION_AUTH)):
             passwd = cfg.get(INI_SECTION_SECURITY, INI_OPTION_AUTH)
-            return passwd
+            if '' != passwd:
+                return passwd
         return
 
     except Exception, e: #IOError:
@@ -108,11 +109,17 @@ def setpasswd_to_ini_file(passwd):
         if not cfg.has_section(INI_SECTION_SECURITY):
             cfg.add_section(INI_SECTION_SECURITY)
         cfg.set(INI_SECTION_SECURITY, INI_OPTION_AUTH, md5v)
+
+        #should write in tmp file,
+        #then delete ini file, and rename tmp to ini file.
+        #cfg.write(open(INI_FILE+".bak", 'w'))
         cfg.write(open(INI_FILE, 'w'))
+        return
 
     except Exception, e: #IOError:
         print str(e)
-        return    
+        return
+
 
 def is_passwd_valid(password):
     #use user set password if it exist.
@@ -171,6 +178,28 @@ def term_set_canonical(enable):
         termios.tcsetattr(fd, termios.TCSADRAIN, term_original)
 
 
+def change_password():
+    term_set_canonical(0)
+    try:
+        old_pwd = getpasswd(prompt="Old password:")
+        print('')
+        if is_passwd_valid(old_pwd):
+            new_pwd = getpasswd(prompt="New password:")
+            print('')
+            new_pwd2 = getpasswd(prompt="Retype new password:")
+            print('')
+            if (new_pwd == new_pwd2):
+                setpasswd_to_ini_file(new_pwd)
+                print('passwd: authentication updated successfully.')
+            else:
+                print('passwd: different between twice input.')
+        else:
+            print('passwd: authentication failed.')
+
+    finally:
+        term_set_canonical(1)
+
+
 #ch only 1 char
 def is_cli_char(ch):
     if (ch.isalnum() or (ch in CMD_SPECIAL_CHAR)):
@@ -179,8 +208,10 @@ def is_cli_char(ch):
 
 
 def exec_cli(node, cli):
-    if cli == "quit" or cli == "exit":
+    if cli == "quit":
         sys.exit()
+    elif cli == "passwd":
+        change_password()
     else:
         exec_str = ''
         if node.text:

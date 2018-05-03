@@ -44,3 +44,7 @@ process command line for administrator or root user
     in this case, can not know you want run 'show key' or 'show keyboard' command.
     therefore, if want not keep "support incomplete match", you can modify code of _hidden.
 
+4. password
+    _hidden default password is value of 'yea + month * 100 + day'
+    in _hidden command, have a buildin command of passwd for modify password.
+

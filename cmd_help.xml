@@ -56,12 +56,12 @@
         <ACTION></ACTION>
     </COMMAND>
 
-<!-- notices: quit and exit, is already used as buildin command key -->
-<!-- notices: please keep quit and exit command, need not delete it -->
+<!-- notices: quit and passwd, is already used as buildin command key -->
+<!-- notices: please keep quit and passwd command, need not delete it -->
     <COMMAND name="quit" help="Quit hidden command line">
         <ACTION/>
     </COMMAND>
-    <COMMAND name="exit" help="Exit hidden command line">
+    <COMMAND name="passwd" help="Change password that login this hidden command">
         <ACTION/>
     </COMMAND>
 </CLIROOT>
